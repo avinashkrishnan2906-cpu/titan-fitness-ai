@@ -13,10 +13,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+api_key = os.getenv("SAMBANOVA_API_KEY")
 # SambaNova client
 client = SambaNova(
-    api_key="8e68104c-f6ec-4718-9cba-d1e6ebfe7909",
+    api_key=api_key,
     base_url="https://api.sambanova.ai/v1",
 )
 
