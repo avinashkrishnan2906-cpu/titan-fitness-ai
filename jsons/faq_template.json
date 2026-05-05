@@ -1,0 +1,13 @@
+{
+  "membership rates": "We have three main tiers at {gym_name} to fit your goals. Prices start at {price} per month—would you like the full breakdown?",
+  "free trial": "We’d love to have you at {gym_name}! We offer a {trial_days} free pass for local residents. You can snag one here: {booking_link}",
+  "sign-up fee": "To keep the equipment top-notch, we have a one-time sign-up fee of {signup_fee} and an annual maintenance fee of {annual_fee}.",
+  "opening hours": "We’re here for the early birds and night owls! We’re open {timing_weekday} on weekdays and {timing_weekend} on weekends.",
+  "location": "You can find us over at {location}. Stop by for a tour!",
+  "discounts": "We sure do! We offer a {discount_rate} discount for students, local workers, and service members. Just bring a valid ID!",
+  "class booking": "It’s super easy—just hop onto our mobile app or use this link: {booking_link}. I’d recommend booking 24 hours in advance!",
+  "parking": "We offer a dedicated free parking lot at {gym_name}. Currently, valet parking is not available, but there is plenty of space for members.",
+  "towel service": "We provide {towel_policy} for your workout. You’re also welcome to bring your favorite one from home!",
+  "childcare": "We do! Our Kids Club is open {childcare_hours}. Would you like to see the pricing?",
+  "personal training": "We have certified professional trainers at {gym_name} who can guide you based on your fitness goals. Would you like to book a session with a trainer?"
+}

@@ -1,0 +1,15 @@
+{
+  "gym_name": "Titan Fitness",
+  "price": "₹2000",
+  "trial_days": "1-day",
+  "signup_fee": "₹500",
+  "annual_fee": "₹1200",
+  "timing_weekday": "6 AM - 10 PM",
+  "timing_weekend": "7 AM - 9 PM",
+  "location": "Anna Nagar, Chennai",
+  "booking_link": "https://titanfitness.in/book",
+  "discount_rate": "15%",
+  "parking_status": "a dedicated free parking lot",
+  "towel_policy": "complimentary sweat towels",
+  "childcare_hours": "8 AM - 12 PM and 4 PM - 8 PM"
+}
