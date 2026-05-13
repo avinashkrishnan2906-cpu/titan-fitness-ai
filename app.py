@@ -1,4 +1,5 @@
 print("🔥 APP STARTING")
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -6,7 +7,11 @@ import json
 import os
 from sambanova import SambaNova
 
+# =========================
+# FASTAPI APP
+# =========================
 app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,30 +20,65 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# =========================
+# API KEY
+# =========================
 api_key = os.getenv("SAMBANOVA_API_KEY")
-# SambaNova client
+
+if not api_key:
+    raise ValueError("❌ SAMBANOVA_API_KEY is missing")
+
+# =========================
+# SAMBANOVA CLIENT
+# =========================
 client = SambaNova(
     api_key=api_key,
     base_url="https://api.sambanova.ai/v1",
 )
 
-# Load files
-with open(r"E:\ai_chatbot_business\jsons\faq_template.json", "r", encoding="utf-8") as f:
+print("✅ SambaNova client initialized")
+
+# =========================
+# FILE PATHS (VERCEL SAFE)
+# =========================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+faq_path = os.path.join(BASE_DIR, "faq_template.json")
+config_path = os.path.join(BASE_DIR, "titan_fitness.json")
+
+print("📂 FAQ PATH:", faq_path)
+print("📂 CONFIG PATH:", config_path)
+
+# =========================
+# LOAD JSON FILES
+# =========================
+with open(faq_path, "r", encoding="utf-8") as f:
     template_data = json.load(f)
 
-with open(r"E:\ai_chatbot_business\jsons\titan_fitness.json", "r", encoding="utf-8") as f:
+with open(config_path, "r", encoding="utf-8") as f:
     config_data = json.load(f)
 
-# Build responses
+print("✅ JSON files loaded")
+
+# =========================
+# BUILD RESPONSES
+# =========================
 responses = {}
+
 for key, value in template_data.items():
     responses[key] = value.format_map(config_data)
 
-# Request model
+print("✅ Responses built")
+
+# =========================
+# REQUEST MODEL
+# =========================
 class ChatRequest(BaseModel):
     message: str
 
-
+# =========================
+# AI RESPONSE FUNCTION
+# =========================
 def get_response(user_input):
     keys = list(responses.keys())
 
@@ -61,21 +101,45 @@ def get_response(user_input):
 
     response = client.chat.completions.create(
         model="DeepSeek-V3.1",
-        messages=[{"role": "user", "content": prompt}],
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
         temperature=0.1,
         top_p=0.1
     )
 
     category = response.choices[0].message.content.strip().lower()
 
+    print("🤖 AI CATEGORY:", category)
+
     for key in responses:
-        if key in category:
+        if key.lower() in category:
             return responses[key]
 
     return "Sorry, I didn't understand that."
 
-
+# =========================
+# CHAT ENDPOINT
+# =========================
 @app.post("/chat")
 def chat(req: ChatRequest):
+
+    print("📩 USER MESSAGE:", req.message)
+
     reply = get_response(req.message)
-    return {"response": reply}
+
+    return {
+        "response": reply
+    }
+
+# =========================
+# ROOT ENDPOINT
+# =========================
+@app.get("/")
+def root():
+    return {
+        "message": "🚀 Titan Fitness AI Bot is running!"
+    }
