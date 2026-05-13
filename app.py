@@ -144,6 +144,10 @@ def root():
     return {
         "message": "🚀 Titan Fitness AI Bot is running!"
     }
+
 @app.get("/ui")
 def ui():
-    return FileResponse("index.html")
+
+    index_path = os.path.join(BASE_DIR, "index.html")
+
+    return FileResponse(index_path)
