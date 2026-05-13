@@ -1,5 +1,3 @@
-print("🔥 APP STARTING")
-from fastapi.responses import FileResponse
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -144,10 +142,3 @@ def root():
     return {
         "message": "🚀 Titan Fitness AI Bot is running!"
     }
-
-@app.get("/ui")
-def ui():
-
-    index_path = os.path.join(BASE_DIR, "UI", "index.html")
-
-    return FileResponse(index_path)
