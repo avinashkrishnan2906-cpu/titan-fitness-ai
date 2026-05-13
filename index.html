@@ -501,7 +501,7 @@
     showTyping();
 
     try {
-      const res = await fetch('https://titan-fitness-ai-aet6-gr4i9hs5k.vercel.app/chat', {
+      const res = await fetch('/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: msg })
