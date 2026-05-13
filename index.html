@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Titan Fitness • AI Coach</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── RESET & VARS ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:    #ff2d4e;
+      --orange: #ff6a00;
+      --gold:   #ffd166;
+      --bg0:    #080810;
+      --bg1:    #0f0f1a;
+      --bg2:    #16161f;
+      --glass:  rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --text:   #f0f0f5;
+      --muted:  #7b7b96;
+      --grad:   linear-gradient(135deg, var(--red), var(--orange));
+    }
+
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg0);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── ANIMATED BG ── */
+    .bg-canvas {
+      position: fixed; inset: 0; z-index: 0;
+      overflow: hidden;
+    }
+    .bg-canvas::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 80%, rgba(255,45,78,.18) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 20%, rgba(255,106,0,.12) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 60% at 50% 50%, rgba(255,209,102,.06) 0%, transparent 70%);
+      animation: breathe 8s ease-in-out infinite alternate;
+    }
+    @keyframes breathe {
+      from { opacity: .7; transform: scale(1); }
+      to   { opacity: 1;  transform: scale(1.05); }
+    }
+
+    .grid-lines {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* ── MAIN SHELL ── */
+    .shell {
+      position: relative; z-index: 1;
+      width: min(480px, 100vw);
+      height: 100vh;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      padding: 18px 22px 14px;
+      background: rgba(8,8,16,.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 14px;
+      flex-shrink: 0;
+    }
+
+    .logo-ring {
+      width: 46px; height: 46px;
+      border-radius: 14px;
+      background: var(--grad);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 20px rgba(255,45,78,.4);
+      animation: pulse-ring 3s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulse-ring {
+      0%,100% { box-shadow: 0 0 20px rgba(255,45,78,.4); }
+      50%      { box-shadow: 0 0 35px rgba(255,106,0,.6); }
+    }
+
+    .header-text { flex: 1; }
+    .header-text h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px; letter-spacing: 2px;
+      background: var(--grad);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header-text p {
+      font-size: 11px; color: var(--muted); font-weight: 300; margin-top: 1px;
+    }
+
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+      animation: blink 2s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%,100% { opacity: 1; } 50% { opacity: .4; }
+    }
+
+    /* ── PROMO BANNER ── */
+    .promo-banner {
+      background: linear-gradient(90deg, rgba(255,45,78,.15), rgba(255,106,0,.15));
+      border-bottom: 1px solid rgba(255,45,78,.2);
+      padding: 8px 18px;
+      font-size: 11.5px; font-weight: 500; color: #ffaa88;
+      display: flex; align-items: center; gap: 8px;
+      overflow: hidden; flex-shrink: 0;
+    }
+    .promo-banner span.tag {
+      background: var(--grad);
+      color: #fff;
+      font-size: 10px; font-weight: 600;
+      padding: 2px 7px; border-radius: 4px;
+      letter-spacing: .5px;
+    }
+    .promo-scroll {
+      overflow: hidden; white-space: nowrap; flex: 1;
+    }
+    .promo-scroll-inner {
+      display: inline-block;
+      animation: marquee 18s linear infinite;
+    }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    /* ── QUICK CHIPS ── */
+    .chips-bar {
+      padding: 10px 14px;
+      display: flex; gap: 8px; overflow-x: auto; flex-shrink: 0;
+      scrollbar-width: none;
+    }
+    .chips-bar::-webkit-scrollbar { display: none; }
+    .chip {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--glass);
+      font-size: 12px; color: var(--muted);
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+      backdrop-filter: blur(8px);
+    }
+    .chip:hover {
+      border-color: var(--red);
+      color: #fff;
+      background: rgba(255,45,78,.1);
+    }
+
+    /* ── MESSAGES ── */
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 16px 8px;
+      display: flex; flex-direction: column; gap: 12px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,45,78,.3) transparent;
+    }
+    #messages::-webkit-scrollbar { width: 4px; }
+    #messages::-webkit-scrollbar-track { background: transparent; }
+    #messages::-webkit-scrollbar-thumb { background: rgba(255,45,78,.3); border-radius: 4px; }
+
+    .msg-row {
+      display: flex; gap: 8px; align-items: flex-end;
+      animation: fadeUp .35s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .msg-row.user { flex-direction: row-reverse; }
+
+    .avatar {
+      width: 30px; height: 30px; border-radius: 10px;
+      background: var(--grad);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .msg-row.user .avatar {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+    }
+
+    .bubble {
+      max-width: 78%;
+      padding: 12px 15px;
+      border-radius: 18px;
+      font-size: 13.5px; line-height: 1.55;
+      position: relative;
+    }
+    .bot .bubble {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+    .user .bubble {
+      background: var(--grad);
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 4px 20px rgba(255,45,78,.3);
+    }
+
+    /* ── TYPING INDICATOR ── */
+    .typing-row {
+      display: flex; gap: 8px; align-items: flex-end;
+      animation: fadeUp .3s ease both;
+    }
+    .typing-bubble {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      padding: 14px 18px; border-radius: 18px; border-bottom-left-radius: 4px;
+      display: flex; gap: 5px; align-items: center;
+    }
+    .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--muted);
+      animation: bounce 1.2s ease-in-out infinite;
+    }
+    .dot:nth-child(2) { animation-delay: .2s; }
+    .dot:nth-child(3) { animation-delay: .4s; }
+    @keyframes bounce {
+      0%,80%,100% { transform: translateY(0); opacity: .5; }
+      40%          { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* ── LEAD CAPTURE ── */
+    .lead-card {
+      background: linear-gradient(135deg, rgba(255,45,78,.12), rgba(255,106,0,.08));
+      border: 1px solid rgba(255,45,78,.3);
+      border-radius: 16px;
+      padding: 18px;
+      animation: fadeUp .4s ease both;
+    }
+    .lead-card h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px; letter-spacing: 1.5px;
+      color: var(--gold); margin-bottom: 6px;
+    }
+    .lead-card p { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+    .lead-inputs { display: flex; flex-direction: column; gap: 10px; }
+    .lead-input {
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #fff; font-size: 13px; font-family: 'DM Sans', sans-serif;
+      outline: none; transition: border-color .2s;
+    }
+    .lead-input:focus { border-color: var(--red); }
+    .lead-input::placeholder { color: var(--muted); }
+    .lead-btn {
+      padding: 11px;
+      border-radius: 10px;
+      border: none;
+      background: var(--grad);
+      color: #fff; font-size: 13.5px; font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: opacity .2s, transform .1s;
+      box-shadow: 0 4px 20px rgba(255,45,78,.35);
+    }
+    .lead-btn:hover { opacity: .9; }
+    .lead-btn:active { transform: scale(.98); }
+
+    /* ── INPUT AREA ── */
+    .input-area {
+      padding: 14px 14px 18px;
+      background: rgba(8,8,16,.9);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .input-row {
+      display: flex; gap: 10px; align-items: center;
+    }
+    #chat-input {
+      flex: 1;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 12px 18px;
+      color: #fff; font-size: 13.5px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      transition: border-color .25s;
+    }
+    #chat-input:focus { border-color: rgba(255,45,78,.5); }
+    #chat-input::placeholder { color: var(--muted); }
+
+    .send-btn {
+      width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+      background: var(--grad);
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 18px rgba(255,45,78,.4);
+      transition: transform .15s, box-shadow .2s;
+    }
+    .send-btn:hover { transform: scale(1.08); box-shadow: 0 0 28px rgba(255,45,78,.6); }
+    .send-btn:active { transform: scale(.95); }
+    .send-btn svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    .footer-note {
+      text-align: center; font-size: 10.5px; color: var(--muted);
+      margin-top: 8px; letter-spacing: .3px;
+    }
+    .footer-note span { color: var(--red); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<!-- Background -->
+<div class="bg-canvas">
+  <div class="grid-lines"></div>
+</div>
+
+<!-- Main Shell -->
+<div class="shell">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-ring">🏋️</div>
+    <div class="header-text">
+      <h1>TITAN FITNESS</h1>
+      <p>AI Coach • Always Available</p>
+    </div>
+    <div class="status-dot"></div>
+  </div>
+
+  <!-- Promo Banner -->
+  <div class="promo-banner">
+    <span class="tag">🔥 HOT</span>
+    <div class="promo-scroll">
+      <span class="promo-scroll-inner">
+        FREE 7-Day Trial • No Credit Card • Join 5,000+ Members • 24/7 Gym Access • Personal Training Plans &nbsp;&nbsp;&nbsp;&nbsp;
+        FREE 7-Day Trial • No Credit Card • Join 5,000+ Members • 24/7 Gym Access • Personal Training Plans &nbsp;&nbsp;&nbsp;&nbsp;
+      </span>
+    </div>
+  </div>
+
+  <!-- Quick Chips -->
+  <div class="chips-bar" id="chips">
+    <div class="chip" onclick="quickSend(this)">💰 Pricing</div>
+    <div class="chip" onclick="quickSend(this)">🎯 Free Trial</div>
+    <div class="chip" onclick="quickSend(this)">⏰ Timings</div>
+    <div class="chip" onclick="quickSend(this)">🏅 Classes</div>
+    <div class="chip" onclick="quickSend(this)">💪 Personal Training</div>
+    <div class="chip" onclick="quickSend(this)">📍 Location</div>
+  </div>
+
+  <!-- Messages -->
+  <div id="messages"></div>
+
+  <!-- Input Area -->
+  <div class="input-area">
+    <div class="input-row">
+      <input type="text" id="chat-input" placeholder="Ask about pricing, trial, timings…" autocomplete="off" />
+      <button class="send-btn" onclick="send()" aria-label="Send">
+        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+    <div class="footer-note">Powered by <span>Titan AI</span> • Reply in seconds</div>
+  </div>
+
+</div>
+
+<script>
+  let msgCount = 0;
+  let leadShown = false;
+
+  /* ── helpers ── */
+  function userAvatar() {
+    const a = document.createElement('div');
+    a.className = 'avatar';
+    a.textContent = '🧑';
+    return a;
+  }
+  function botAvatar() {
+    const a = document.createElement('div');
+    a.className = 'avatar';
+    a.textContent = '🤖';
+    return a;
+  }
+
+  function addMessage(html, type) {
+    const wrap = document.getElementById('messages');
+    const row = document.createElement('div');
+    row.className = 'msg-row ' + type;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = html;
+
+    if (type === 'bot') {
+      row.appendChild(botAvatar());
+      row.appendChild(bubble);
+    } else {
+      row.appendChild(bubble);
+      row.appendChild(userAvatar());
+    }
+
+    wrap.appendChild(row);
+    wrap.scrollTop = wrap.scrollHeight;
+  }
+
+  /* ── typing indicator ── */
+  let typingEl = null;
+  function showTyping() {
+    const wrap = document.getElementById('messages');
+    const row = document.createElement('div');
+    row.className = 'typing-row';
+    const av = document.createElement('div');
+    av.className = 'avatar'; av.textContent = '🤖';
+    const bub = document.createElement('div');
+    bub.className = 'typing-bubble';
+    bub.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+    row.appendChild(av); row.appendChild(bub);
+    wrap.appendChild(row);
+    wrap.scrollTop = wrap.scrollHeight;
+    typingEl = row;
+  }
+  function hideTyping() {
+    if (typingEl) { typingEl.remove(); typingEl = null; }
+  }
+
+  /* ── lead capture card ── */
+  function showLeadCapture() {
+    if (leadShown) return;
+    leadShown = true;
+    const wrap = document.getElementById('messages');
+    const card = document.createElement('div');
+    card.className = 'lead-card';
+    card.innerHTML = `
+      <h3>🎯 CLAIM YOUR FREE TRIAL</h3>
+      <p>Drop your details and we'll book your slot within minutes!</p>
+      <div class="lead-inputs">
+        <input class="lead-input" id="lead-name" type="text" placeholder="Your Full Name" />
+        <input class="lead-input" id="lead-phone" type="tel"  placeholder="Phone Number" />
+        <button class="lead-btn" onclick="submitLead()">Book My Free Trial →</button>
+      </div>
+    `;
+    wrap.appendChild(card);
+    wrap.scrollTop = wrap.scrollHeight;
+  }
+
+  function submitLead() {
+    const name  = document.getElementById('lead-name').value.trim();
+    const phone = document.getElementById('lead-phone').value.trim();
+    if (!name || !phone) {
+      alert('Please enter both name and phone number 💪');
+      return;
+    }
+    // replace card with confirmation
+    const card = document.querySelector('.lead-card');
+    card.innerHTML = `
+      <h3>🎉 YOU'RE IN, ${name.toUpperCase()}!</h3>
+      <p>Our team will call you at <strong>${phone}</strong> within 30 minutes to confirm your FREE 7-day trial.</p>
+      <p style="margin-top:8px;color:#ffd166;font-weight:600;">Get ready to TRANSFORM. 🔥</p>
+    `;
+    document.getElementById('messages').scrollTop = 9999;
+  }
+
+  /* ── quick chips ── */
+  function quickSend(el) {
+    const text = el.textContent.replace(/^[^\w]+/, '').trim();
+    document.getElementById('chat-input').value = text;
+    send();
+  }
+
+  /* ── main send ── */
+  async function send() {
+    const inp = document.getElementById('chat-input');
+    const msg = inp.value.trim();
+    if (!msg) return;
+
+    addMessage(msg, 'user');
+    inp.value = '';
+    msgCount++;
+    showTyping();
+
+    try {
+      const res = await fetch('https://titan-fitness-ai-aet6-gr4i9hs5k.vercel.app/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg })
+      });
+      const data = await res.json();
+      hideTyping();
+      addMessage(data.response, 'bot');
+    } catch {
+      hideTyping();
+      addMessage("⚠️ Couldn't reach the server. Please try again shortly.", 'bot');
+    }
+
+    if (msgCount >= 3 && !leadShown) {
+      setTimeout(showLeadCapture, 800);
+    }
+  }
+
+  /* ── enter key ── */
+  document.getElementById('chat-input').addEventListener('keypress', e => {
+    if (e.key === 'Enter') send();
+  });
+
+  /* ── welcome ── */
+  window.onload = () => {
+    setTimeout(() => {
+      addMessage(
+        "Hey there, future Titan! 👋💪<br>" +
+        "I'm your personal fitness concierge.<br>" +
+        "Ask me anything — <strong>pricing, free trial, classes, timings</strong> — I've got you covered!",
+        'bot'
+      );
+    }, 300);
+  };
+</script>
+</body>
+</html>
