@@ -43,8 +43,8 @@ print("✅ SambaNova client initialized")
 # =========================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-faq_path = os.path.join(BASE_DIR, "faq_template.json")
-config_path = os.path.join(BASE_DIR, "titan_fitness.json")
+faq_path = os.path.join(BASE_DIR, "jsons", "faq_template.json")
+config_path = os.path.join(BASE_DIR, "jsons", "titan_fitness.json")
 
 print("📂 FAQ PATH:", faq_path)
 print("📂 CONFIG PATH:", config_path)
