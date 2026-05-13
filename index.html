@@ -491,33 +491,59 @@
 
   /* ── main send ── */
   async function send() {
+
     const inp = document.getElementById('chat-input');
     const msg = inp.value.trim();
+  
     if (!msg) return;
-
+  
     addMessage(msg, 'user');
+  
     inp.value = '';
+  
     msgCount++;
+  
     showTyping();
-
+  
     try {
+  
       const res = await fetch('/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg })
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: msg
+        })
       });
+  
+      console.log("STATUS:", res.status);
+  
       const data = await res.json();
+  
+      console.log("DATA:", data);
+  
       hideTyping();
-      addMessage(data.response, 'bot');
-    } catch {
+  
+      if (data.response) {
+        addMessage(data.response, 'bot');
+      } else {
+        addMessage("⚠️ No response received from AI", 'bot');
+      }
+  
+    } catch (err) {
+  
+      console.log("ERROR:", err);
+  
       hideTyping();
-      addMessage("⚠️ Couldn't reach the server. Please try again shortly.", 'bot');
+  
+      addMessage("⚠️ Couldn't reach the server.", 'bot');
     }
-
+  
     if (msgCount >= 3 && !leadShown) {
       setTimeout(showLeadCapture, 800);
     }
-  }
+}
 
   /* ── enter key ── */
   document.getElementById('chat-input').addEventListener('keypress', e => {
