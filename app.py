@@ -148,6 +148,6 @@ def root():
 @app.get("/ui")
 def ui():
 
-    index_path = os.path.join(BASE_DIR, "index.html")
+    index_path = os.path.join(BASE_DIR, "UI", "index.html")
 
     return FileResponse(index_path)
