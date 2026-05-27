@@ -4,7 +4,7 @@ from pydantic import BaseModel
 import json
 import os
 from sambanova import SambaNova
-
+import requests
 # =========================
 # FASTAPI APP
 # =========================
@@ -134,6 +134,19 @@ def chat(req: ChatRequest):
         "response": reply
     }
 
+@app.post("/save-lead")
+def save_lead(data: dict):
+
+    webhook_url = "https://script.google.com/macros/s/AKfycbxVXcnVB-5I_0dohGLwOIVzQpp1tqxNpGLSAJXj-JvBv6v421fQNFglhxKlr4YqF53X/exec"
+
+    requests.post(
+        webhook_url,
+        json=data
+    )
+
+    return {
+        "status": "saved"
+    }
 # =========================
 # ROOT ENDPOINT
 # =========================
