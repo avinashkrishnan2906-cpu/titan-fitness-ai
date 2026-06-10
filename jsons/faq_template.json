@@ -1,13 +1,13 @@
 {
-  "membership rates": "We have three main tiers at {gym_name} to fit your goals. Prices start at {price} per month—would you like the full breakdown?",
-  "free trial": "We’d love to have you at {gym_name}! We offer a {trial_days} free pass for local residents. You can snag one here: {booking_link}",
-  "sign-up fee": "To keep the equipment top-notch, we have a one-time sign-up fee of {signup_fee} and an annual maintenance fee of {annual_fee}.",
-  "opening hours": "We’re here for the early birds and night owls! We’re open {timing_weekday} on weekdays and {timing_weekend} on weekends.",
-  "location": "You can find us over at {location}. Stop by for a tour!",
-  "discounts": "We sure do! We offer a {discount_rate} discount for students, local workers, and service members. Just bring a valid ID!",
-  "class booking": "It’s super easy—just hop onto our mobile app or use this link: {booking_link}. I’d recommend booking 24 hours in advance!",
-  "parking": "We offer a dedicated free parking lot at {gym_name}. Currently, valet parking is not available, but there is plenty of space for members.",
-  "towel service": "We provide {towel_policy} for your workout. You’re also welcome to bring your favorite one from home!",
-  "childcare": "We do! Our Kids Club is open {childcare_hours}. Would you like to see the pricing?",
-  "personal training": "We have certified professional trainers at {gym_name} who can guide you based on your fitness goals. Would you like to book a session with a trainer?"
+  "membership rates": "We have hardcore transformation packages at {gym_name} to break your limits. Our intense monthly packs start at just {price}—should I drop the full quarterly and annual breakdown for you? 💪",
+  "free trial": "Hell yeah! We want you to experience the insane energy at {gym_name}. We offer an exclusive {trial_days} free pass for local residents. You can lock in your slot right here: {booking_link} 🎯",
+  "sign-up fee": "To maintain our top-tier machines and heavy iron, we have a one-time registration fee of {signup_fee} and an annual maintenance layout of {annual_fee}.",
+  "opening hours": "No excuses here! We are open for early grinds and late-night sessions. The training floor is alive from {timing_weekday} on weekdays and {timing_weekend} on weekends. ⏰",
+  "location": "{gym_name} is fully located over at {location}. Walk in, check out the floor, and pull a massive workout session! 📍",
+  "discounts": "We respect the hustle! We offer a solid {discount_rate} discount for students, athletes, and service members. Just bring your valid ID proof to the desk! 💥",
+  "class booking": "Booking your strength or conditioning tracks is simple—just secure your spot via this link: {booking_link}. We highly recommend booking 24 hours early to save your spot! 🏅",
+  "parking": "We have a fully secured {parking_status} at {gym_name}, so you don't have to worry about your ride while lifting heavy. 🚗",
+  "towel service": "We keep it clean! We provide {towel_policy} right when you check in. Feel free to bring your personal gear too! 🏋️",
+  "childcare": "We do not offer childcare hours. Our training floor is a strict {childcare_hours} environment built entirely for serious training! ❌",
+  "personal training": "Yes! We have elite, certified transformation coaches at {gym_name} specializing in rapid fat loss, mass building, and contest prep. Want me to arrange a 1-on-1 session with a trainer? 👊"
 }
