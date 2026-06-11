@@ -98,16 +98,19 @@ def chat(req: ChatRequest):
 
 @app.post("/save-lead")
 def save_lead(data: dict):
-    webhook_url = "https://script.google.com/macros/s/AKfycbxVXcnVB-5I_0dohGLwOIVzQpp1tqxNpGLSAJXj-JvBv6v421fQNFglhxKlr4YqF53X/exec"
+    # 🔥 UPDATED: Your active public macro deployment channel identifier link
+    webhook_url = "https://script.google.com/macros/s/AKfycbxbL4n05vuelArsDMgywsHcRVlmr5FckYdb4JfvY9CD6LbwYvkyc4GyvE9npoXaR_o/exec"
     
     try:
-        # Structured forwarding to your Google Apps Script Webhook
-        response = requests.post(webhook_url, json=data, timeout=8)
+        print(f"📡 Forwarding Payload to Google Macro: {data}")
+        # Retaining redirect configuration parameters to pass through the Google load-balancer pipeline
+        response = requests.post(webhook_url, json=data, timeout=10, allow_redirects=True)
+        print(f"📡 Google Server HTTP Response Status: {response.status_code}")
+        
         return {"status": "saved", "origin": "webhook_confirmed"}
     except requests.exceptions.RequestException as e:
         print(f"❌ Google Sheet Save Failed: {e}")
-        # Return status success anyway to not ruin user experience on frontend, handle retry asynchronously
-        return {"status": "cached_locally", "error": str(e)}
+        raise HTTPException(status_code=502, detail=f"Google Macro Interface Connection Timeout: {str(e)}")
 
 @app.get("/")
 def root():
