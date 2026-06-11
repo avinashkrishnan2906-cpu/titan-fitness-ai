@@ -1,4 +1,5 @@
 fastapi
 uvicorn
-sambanova
+pydantic
 requests
+sambanova
