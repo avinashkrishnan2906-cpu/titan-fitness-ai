@@ -4,7 +4,8 @@ from pydantic import BaseModel
 import json
 import os
 from sambanova import SambaNova
-import requests
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 app = FastAPI()
 
@@ -17,9 +18,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# =========================
-# CONFIGURATION & API CLIENT
-# =========================
+# ==========================================
+# CONFIGURATION & AI CLIENT
+# ==========================================
 api_key = os.getenv("SAMBANOVA_API_KEY")
 if not api_key:
     raise ValueError("❌ SAMBANOVA_API_KEY is missing")
@@ -33,85 +34,92 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 faq_path = os.path.join(BASE_DIR, "jsons", "faq_template.json")
 config_path = os.path.join(BASE_DIR, "jsons", "titan_fitness.json")
 
-# Load raw configurations
 with open(faq_path, "r", encoding="utf-8") as f:
     template_data = json.load(f)
 
 with open(config_path, "r", encoding="utf-8") as f:
     config_data = json.load(f)
 
-# Build the structural knowledge context base for the gym
 knowledge_base = ""
 for key, value in template_data.items():
-    formatted_value = value.format_map(config_data)
-    knowledge_base += f"- {key.upper()}: {formatted_value}\n"
+    try:
+         knowledge_base += f"- {key.upper()}: {value.format_map(config_data)}\n"
+    except Exception:
+         knowledge_base += f"- {key.upper()}: {value}\n"
 
-# =========================
-# SCHEMAS
-# =========================
+# ==========================================
+# DIRECT NATIVE GOOGLE SHEET INJECTOR
+# ==========================================
+def inject_lead_directly(row_data: list):
+    """Bypasses macros completely to write straight to the spreadsheet workbook"""
+    try:
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        
+        # Stream credentials directly out of secure Vercel environment memory
+        creds_json_string = os.getenv("GOOGLE_CREDS_JSON")
+        if not creds_json_string:
+            print("❌ Error: GOOGLE_CREDS_JSON environment variable is not configured on Vercel!")
+            return False
+            
+        creds_dict = json.loads(creds_json_string)
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        gc = gspread.authorize(creds)
+        
+        # Target your exact active Google Spreadsheet by its text name
+        workbook = gc.open("We Fitness Club Data")
+        sheet = workbook.sheet1
+        
+        # Append data row natively
+        sheet.append_row(row_data)
+        print("✅ Success: Lead injected natively via gspread driver!")
+        return True
+    except Exception as e:
+        print(f"❌ Native Sheets Driver Failure: {e}")
+        return False
+
 class ChatRequest(BaseModel):
     message: str
 
 # =========================
-# AI CONTEXTUAL ENGINE
-# =========================
-def get_contextual_response(user_input: str) -> str:
-    system_instruction = f"""
-    You are an elite AI Front Desk Concierge for Titan Fitness. Your goal is to convert visitors into leads.
-    
-    Here is the exact verified knowledge base for Titan Fitness:
-    {knowledge_base}
-    
-    CRITICAL RULES:
-    1. Base your answer ONLY on the verified data above.
-    2. If the user asks for something not directly mentioned, politely guide them to book a free trial to speak with a coach.
-    3. Keep answers concise, high-energy, and professional (max 2-3 sentences). Always include a gym emoji.
-    4. If the user expresses explicit interest in joining, starting, pricing, or trials, end your response by encouraging them to use the free trial booking card.
-    """
-
-    try:
-        response = client.chat.completions.create(
-            model="DeepSeek-V3.1", # Ensure this model string matches SambaNova's exact designation
-            messages=[
-                {"role": "system", "content": system_instruction},
-                {"role": "user", "content": user_input}
-            ],
-            temperature=0.3, # Slightly higher for fluid conversion conversational styles
-            max_tokens=250
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"❌ AI Error: {e}")
-        return "We're experiencing a high volume of traffic! Please jump straight to booking your Free 7-Day Trial below using our registration card! 👇"
-
-# =========================
-# ROUTES
+# LIVE API ENDPOINTS
 # =========================
 @app.post("/chat")
 def chat(req: ChatRequest):
-    if not req.message.strip():
-        raise HTTPException(status_code=400, detail="Message cannot be empty")
-        
-    print(f"📩 USER MESSAGE: {req.message}")
-    reply = get_contextual_response(req.message)
-    return {"response": reply}
+    try:
+        system_instruction = f"You are an AI Front Desk Concierge. Knowledge:\n{knowledge_base}"
+        response = client.chat.completions.create(
+            model="DeepSeek-V3.1",
+            messages=[
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": req.message}
+            ],
+            temperature=0.3,
+            max_tokens=250
+        )
+        return {"response": response.choices[0].message.content.strip()}
+    except Exception:
+        return {"response": "Welcome to the floor! Claim your Free Pass pass right below! 👇"}
 
 @app.post("/save-lead")
 def save_lead(data: dict):
-    # 🔥 UPDATED: Your active public macro deployment channel identifier link
-    webhook_url = "https://script.google.com/macros/s/AKfycbxbL4n05vuelArsDMgywsHcRVlmr5FckYdb4JfvY9CD6LbwYvkyc4GyvE9npoXaR_o/exec"
+    print(f"📡 INCOMING PAYLOAD RECEIVED: {data}")
     
-    try:
-        print(f"📡 Forwarding Payload to Google Macro: {data}")
-        # Retaining redirect configuration parameters to pass through the Google load-balancer pipeline
-        response = requests.post(webhook_url, json=data, timeout=10, allow_redirects=True)
-        print(f"📡 Google Server HTTP Response Status: {response.status_code}")
-        
-        return {"status": "saved", "origin": "webhook_confirmed"}
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Google Sheet Save Failed: {e}")
-        raise HTTPException(status_code=502, detail=f"Google Macro Interface Connection Timeout: {str(e)}")
+    name = data.get("name", "Unknown Name")
+    phone = data.get("phone", "Unknown Phone")
+    goal = data.get("goal", "General Fitness")
+    source = data.get("source", "we_fitness_center")
+    
+    # Construct row format matrix
+    formatted_row = [name, phone, goal, source]
+    
+    # Execute native direct injection tracking pipeline
+    success = inject_lead_directly(formatted_row)
+    
+    if success:
+        return {"status": "saved", "origin": "native_gspread_confirmed"}
+    else:
+        raise HTTPException(status_code=502, detail="Internal Google Driver payload validation mismatch")
 
 @app.get("/")
 def root():
-    return {"status": "online", "engine": "Titan Fitness AI Agent v1.1"}
+    return {"status": "online", "engine": "We Fitness Native Gspread Engine v2.0"}
