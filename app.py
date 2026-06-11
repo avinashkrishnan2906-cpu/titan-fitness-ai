@@ -31,7 +31,10 @@ client = SambaNova(
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 faq_path = os.path.join(BASE_DIR, "jsons", "faq_template.json")
-config_path = os.path.join(BASE_DIR, "jsons", "titan_fitness.json")
+
+# 🔄 DYNAMIC SELECTION: Change this string to toggle profiles ("we_fitness" or "369_beast")
+CURRENT_GYM = "we_fitness" 
+config_path = os.path.join(BASE_DIR, "jsons", f"{CURRENT_GYM}.json")
 
 # Load raw configurations
 with open(faq_path, "r", encoding="utf-8") as f:
@@ -40,7 +43,7 @@ with open(faq_path, "r", encoding="utf-8") as f:
 with open(config_path, "r", encoding="utf-8") as f:
     config_data = json.load(f)
 
-# Build the structural knowledge context base for the gym
+# Build the structural knowledge context base for the specific gym
 knowledge_base = ""
 for key, value in template_data.items():
     formatted_value = value.format_map(config_data)
@@ -56,10 +59,12 @@ class ChatRequest(BaseModel):
 # AI CONTEXTUAL ENGINE
 # =========================
 def get_contextual_response(user_input: str) -> str:
-    system_instruction = f"""
-    You are an elite AI Front Desk Concierge for Titan Fitness. Your goal is to convert visitors into leads.
+    gym_name = config_data.get("gym_name", "Our Gym")
     
-    Here is the exact verified knowledge base for Titan Fitness:
+    system_instruction = f"""
+    You are an elite AI Front Desk Concierge for {gym_name}. Your goal is to convert visitors into leads.
+    
+    Here is the exact verified knowledge base for {gym_name}:
     {knowledge_base}
     
     CRITICAL RULES:
@@ -71,18 +76,18 @@ def get_contextual_response(user_input: str) -> str:
 
     try:
         response = client.chat.completions.create(
-            model="DeepSeek-V3.1", # Ensure this model string matches SambaNova's exact designation
+            model="DeepSeek-V3.1", 
             messages=[
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_input}
             ],
-            temperature=0.3, # Slightly higher for fluid conversion conversational styles
+            temperature=0.3, 
             max_tokens=250
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
         print(f"❌ AI Error: {e}")
-        return "We're experiencing a high volume of traffic! Please jump straight to booking your Free 7-Day Trial below using our registration card! 👇"
+        return "We're experiencing heavy floor volume! Drop your details in our registration card below to lock in your slot directly! 👇"
 
 # =========================
 # ROUTES
@@ -98,17 +103,18 @@ def chat(req: ChatRequest):
 
 @app.post("/save-lead")
 def save_lead(data: dict):
+    # Your Google Apps Script Macro Webhook URL
     webhook_url = "https://script.google.com/macros/s/AKfycbxVXcnVB-5I_0dohGLwOIVzQpp1tqxNpGLSAJXj-JvBv6v421fQNFglhxKlr4YqF53X/exec"
     
     try:
-        # Structured forwarding to your Google Apps Script Webhook
-        response = requests.post(webhook_url, json=data, timeout=8)
+        # FIX: Added allow_redirects=True to handle Google Script's 302 HTTP redirection requirement safely!
+        response = requests.post(webhook_url, json=data, timeout=10, allow_redirects=True)
+        print(f"📡 Webhook response code: {response.status_code}")
         return {"status": "saved", "origin": "webhook_confirmed"}
     except requests.exceptions.RequestException as e:
         print(f"❌ Google Sheet Save Failed: {e}")
-        # Return status success anyway to not ruin user experience on frontend, handle retry asynchronously
         return {"status": "cached_locally", "error": str(e)}
 
 @app.get("/")
 def root():
-    return {"status": "online", "engine": "Titan Fitness AI Agent v1.1"}
+    return {"status": "online", "engine": f"{config_data.get('gym_name')} AI Agent v1.2"}
