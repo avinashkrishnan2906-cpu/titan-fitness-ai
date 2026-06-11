@@ -1,15 +1,15 @@
 {
-  "gym_name": "369 Beast Fitness Factory",
-  "price": "₹2,999",
-  "trial_days": "3-day",
+  "gym_name": "We Fitness Center",
+  "price": "₹2,499",
+  "trial_days": "1-day",
   "signup_fee": "₹999",
-  "annual_fee": "₹1,500",
-  "timing_weekday": "5:30 AM - 10:00 PM",
-  "timing_weekend": "6:00 AM - 4:00 PM",
+  "annual_fee": "₹1,200",
+  "timing_weekday": "5:00 AM - 9:30 PM",
+  "timing_weekend": "6:00 AM - 1:00 PM",
   "location": "Coimbatore, Tamil Nadu",
-  "booking_link": "https://369beast-ai.vercel.app/",
-  "discount_rate": "20%",
-  "parking_status": "a dedicated bike & car parking zone",
-  "towel_policy": "fresh workout towels upon check-in",
-  "childcare_hours": "Not Available (Hardcore Training Floor)"
+  "booking_link": "https://wefitness-ai.vercel.app/",
+  "discount_rate": "15%",
+  "parking_status": "free on-site vehicle parking slots",
+  "towel_policy": "complimentary gym towels at the desk",
+  "childcare_hours": "Not Available (Heavy Iron Zone)"
 }
