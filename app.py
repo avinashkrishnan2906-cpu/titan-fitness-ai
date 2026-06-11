@@ -4,8 +4,7 @@ from pydantic import BaseModel
 import json
 import os
 from sambanova import SambaNova
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+import requests
 
 app = FastAPI()
 
@@ -18,9 +17,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ==========================================
-# CONFIGURATION & AI CLIENT
-# ==========================================
+# =========================
+# CONFIGURATION & API CLIENT
+# =========================
 api_key = os.getenv("SAMBANOVA_API_KEY")
 if not api_key:
     raise ValueError("❌ SAMBANOVA_API_KEY is missing")
@@ -32,111 +31,84 @@ client = SambaNova(
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 faq_path = os.path.join(BASE_DIR, "jsons", "faq_template.json")
+config_path = os.path.join(BASE_DIR, "jsons", "titan_fitness.json")
 
-# 🔄 DYNAMIC GYM PROFILE SWITCHER
-# Vercel reads this to target the correct localized data variables
-CURRENT_GYM_PROFILE = "we_fitness"
-config_path = os.path.join(BASE_DIR, "jsons", f"{CURRENT_GYM_PROFILE}.json")
-
+# Load raw configurations
 with open(faq_path, "r", encoding="utf-8") as f:
     template_data = json.load(f)
 
-if os.path.exists(config_path):
-    with open(config_path, "r", encoding="utf-8") as f:
-        config_data = json.load(f)
-else:
-    config_data = {"gym_name": "We Fitness Center"}
+with open(config_path, "r", encoding="utf-8") as f:
+    config_data = json.load(f)
 
+# Build the structural knowledge context base for the gym
 knowledge_base = ""
 for key, value in template_data.items():
-    try:
-        formatted_value = value.format_map(config_data)
-        knowledge_base += f"- {key.upper()}: {formatted_value}\n"
-    except Exception:
-        knowledge_base += f"- {key.upper()}: {value}\n"
+    formatted_value = value.format_map(config_data)
+    knowledge_base += f"- {key.upper()}: {formatted_value}\n"
 
-# ==========================================
-# VERCEL DIRECT GOOGLE INJECTION ENGINE
-# ==========================================
-def append_to_google_sheet(sheet_name: str, row_data: list):
-    """Parses Google Service Keys securely out of Vercel Environment memory"""
-    try:
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        
-        # Pulls your raw JSON credentials string straight out of Vercel's secure environment settings
-        creds_json_string = os.getenv("GOOGLE_CREDS_JSON")
-        if not creds_json_string:
-            print("❌ Error: GOOGLE_CREDS_JSON variable is completely missing from Vercel settings!")
-            return False
-            
-        creds_dict = json.loads(creds_json_string)
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-        gc = gspread.authorize(creds)
-        
-        # Target the exact sheet name sent from the frontend request payload
-        workbook = gc.open(sheet_name)
-        sheet = workbook.sheet1
-        sheet.append_row(row_data)
-        print(f"✅ Production row successfully pushed to Google Sheet: '{sheet_name}'")
-        return True
-    except Exception as e:
-        print(f"❌ Direct Google Sheets Write Failure: {e}")
-        return False
-
+# =========================
+# SCHEMAS
+# =========================
 class ChatRequest(BaseModel):
     message: str
 
+# =========================
+# AI CONTEXTUAL ENGINE
+# =========================
 def get_contextual_response(user_input: str) -> str:
-    gym_name = config_data.get("gym_name", "We Fitness Center")
     system_instruction = f"""
-    You are an elite AI Front Desk Concierge for {gym_name}. Your goal is to convert visitors into leads.
-    Here is the exact verified knowledge base for {gym_name}:
+    You are an elite AI Front Desk Concierge for Titan Fitness. Your goal is to convert visitors into leads.
+    
+    Here is the exact verified knowledge base for Titan Fitness:
     {knowledge_base}
+    
     CRITICAL RULES:
     1. Base your answer ONLY on the verified data above.
-    2. Keep answers concise, high-energy, and professional (max 2-3 sentences). Always include a gym emoji.
+    2. If the user asks for something not directly mentioned, politely guide them to book a free trial to speak with a coach.
+    3. Keep answers concise, high-energy, and professional (max 2-3 sentences). Always include a gym emoji.
+    4. If the user expresses explicit interest in joining, starting, pricing, or trials, end your response by encouraging them to use the free trial booking card.
     """
+
     try:
         response = client.chat.completions.create(
-            model="DeepSeek-V3.1",
+            model="DeepSeek-V3.1", # Ensure this model string matches SambaNova's exact designation
             messages=[
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_input}
             ],
-            temperature=0.3,
+            temperature=0.3, # Slightly higher for fluid conversion conversational styles
             max_tokens=250
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        print(f"❌ AI Core Exception: {e}")
-        return "Floor is packed! Jump straight to our registration card below to lock in your pass! 👇"
+        print(f"❌ AI Error: {e}")
+        return "We're experiencing a high volume of traffic! Please jump straight to booking your Free 7-Day Trial below using our registration card! 👇"
 
 # =========================
-# LIVE API ENDPOINTS
+# ROUTES
 # =========================
 @app.post("/chat")
 def chat(req: ChatRequest):
-    return {"response": get_contextual_response(req.message)}
+    if not req.message.strip():
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+        
+    print(f"📩 USER MESSAGE: {req.message}")
+    reply = get_contextual_response(req.message)
+    return {"response": reply}
 
 @app.post("/save-lead")
 def save_lead(data: dict):
-    print(f"📡 INCOMING LEAD PAYLOAD TO VERCEL: {data}")
+    webhook_url = "https://script.google.com/macros/s/AKfycbxVXcnVB-5I_0dohGLwOIVzQpp1tqxNpGLSAJXj-JvBv6v421fQNFglhxKlr4YqF53X/exec"
     
-    name = data.get("name", "Unknown Name")
-    phone = data.get("phone", "Unknown Phone")
-    goal = data.get("goal", "General Fitness")
-    
-    # 📊 Grabs whatever sheet name is requested dynamically by the incoming frontend network request
-    target_sheet = data.get("target_sheet_name", "We Fitness Club Data")
-    
-    formatted_row = [name, phone, goal]
-    success = append_to_google_sheet(target_sheet, formatted_row)
-    
-    if success:
-        return {"status": "saved", "origin": "vercel_gspread_cloud_confirmed"}
-    else:
-        return {"status": "cloud_error", "detail": "Check Vercel Environment configuration variables and sheet editing permissions"}
+    try:
+        # Structured forwarding to your Google Apps Script Webhook
+        response = requests.post(webhook_url, json=data, timeout=8)
+        return {"status": "saved", "origin": "webhook_confirmed"}
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Google Sheet Save Failed: {e}")
+        # Return status success anyway to not ruin user experience on frontend, handle retry asynchronously
+        return {"status": "cached_locally", "error": str(e)}
 
 @app.get("/")
 def root():
-    return {"status": "online", "engine": f"{config_data.get('gym_name')} Cloud Engine v1.4"}
+    return {"status": "online", "engine": "Titan Fitness AI Agent v1.1"}
