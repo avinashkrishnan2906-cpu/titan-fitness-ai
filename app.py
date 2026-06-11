@@ -110,18 +110,22 @@ def chat(req: ChatRequest):
 
 @app.post("/save-lead")
 def save_lead(data: dict):
-    # Your active, verified Google Apps Script Deployment link
+    # This single webhook URL stays the same for all your gym clients
     webhook_url = "https://script.google.com/macros/s/AKfycbxbL4n05vuelArsDMgywsHcRVlmr5FckYdb4JfvY9CD6LbwYvkyc4GyvE9npoXaR_o/exec"
     
     try:
-        print(f"📡 Forwarding Payload to Active Google Webhook: {data}")
-        # Passing redirection allowance blocks to satisfy the Google cloud layer parameters
+        # Extract target_sheet sent by frontend, default to a safe fallback if missing
+        target_sheet = data.get("target_sheet", "General Gym Leads")
+        print(f"📡 Forwarding Payload to Dynamic Sheet [{target_sheet}]: {data}")
+        
+        # Send the entire dictionary (including the target sheet name) to Google
         response = requests.post(webhook_url, json=data, timeout=12, allow_redirects=True)
-        print(f"📡 API HTTP Response: {response.status_code}")
-        return {"status": "saved", "origin": "webhook_confirmed"}
+        print(f"📡 Google API Response: {response.status_code}")
+        return {"status": "saved", "origin": "dynamic_webhook_confirmed"}
+        
     except requests.exceptions.RequestException as e:
         print(f"❌ Webhook write interface failed: {e}")
-        return {"status": "fallback_bypass_activated", "msg": "Proceeding with visual tracking render step"}
+        return {"status": "error", "msg": str(e)}
 
 @app.get("/")
 def root():
