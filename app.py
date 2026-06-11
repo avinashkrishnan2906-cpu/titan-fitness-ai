@@ -19,7 +19,7 @@ app.add_middleware(
 )
 
 # ==========================================
-# CONFIGURATION, CORE DIRECTORIES & AI ENGINE
+# CONFIGURATION & AI CLIENT
 # ==========================================
 api_key = os.getenv("SAMBANOVA_API_KEY")
 if not api_key:
@@ -33,14 +33,14 @@ client = SambaNova(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 faq_path = os.path.join(BASE_DIR, "jsons", "faq_template.json")
 
-# 🔄 THE DYNAMIC PROFILE SWITCH: Toggle between "we_fitness" or "369_beast" here
+# 🔄 DYNAMIC GYM PROFILE SWITCHER
+# Vercel reads this to target the correct localized data variables
 CURRENT_GYM_PROFILE = "we_fitness"
 config_path = os.path.join(BASE_DIR, "jsons", f"{CURRENT_GYM_PROFILE}.json")
 
 with open(faq_path, "r", encoding="utf-8") as f:
     template_data = json.load(f)
 
-# Fallback patch if file is missing during quick testing
 if os.path.exists(config_path):
     with open(config_path, "r", encoding="utf-8") as f:
         config_data = json.load(f)
@@ -56,27 +56,28 @@ for key, value in template_data.items():
         knowledge_base += f"- {key.upper()}: {value}\n"
 
 # ==========================================
-# GOOGLE SHEETS DIRECT INJECTION ENGINE
+# VERCEL DIRECT GOOGLE INJECTION ENGINE
 # ==========================================
 def append_to_google_sheet(sheet_name: str, row_data: list):
-    """Bypasses macros entirely to inject rows directly into any Google Sheet by name"""
+    """Parses Google Service Keys securely out of Vercel Environment memory"""
     try:
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         
-        # Looks for your standard Google service account key file in your backend folder
-        creds_path = os.path.join(BASE_DIR, "creds.json") 
-        if not os.path.exists(creds_path):
-            print("❌ Error: 'creds.json' service account file missing from backend folder!")
+        # Pulls your raw JSON credentials string straight out of Vercel's secure environment settings
+        creds_json_string = os.getenv("GOOGLE_CREDS_JSON")
+        if not creds_json_string:
+            print("❌ Error: GOOGLE_CREDS_JSON variable is completely missing from Vercel settings!")
             return False
             
-        creds = ServiceAccountCredentials.from_json_keyfile_name(creds_path, scope)
+        creds_dict = json.loads(creds_json_string)
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         gc = gspread.authorize(creds)
         
-        # Opens whatever sheet name is requested dynamically by the user payload
+        # Target the exact sheet name sent from the frontend request payload
         workbook = gc.open(sheet_name)
         sheet = workbook.sheet1
         sheet.append_row(row_data)
-        print(f"✅ Row successfully injected into sheet: '{sheet_name}'")
+        print(f"✅ Production row successfully pushed to Google Sheet: '{sheet_name}'")
         return True
     except Exception as e:
         print(f"❌ Direct Google Sheets Write Failure: {e}")
@@ -107,6 +108,7 @@ def get_contextual_response(user_input: str) -> str:
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
+        print(f"❌ AI Core Exception: {e}")
         return "Floor is packed! Jump straight to our registration card below to lock in your pass! 👇"
 
 # =========================
@@ -118,27 +120,23 @@ def chat(req: ChatRequest):
 
 @app.post("/save-lead")
 def save_lead(data: dict):
-    print(f"📡 INCOMING LEAD PAYLOAD: {data}")
+    print(f"📡 INCOMING LEAD PAYLOAD TO VERCEL: {data}")
     
-    # Safely extract user fields
     name = data.get("name", "Unknown Name")
     phone = data.get("phone", "Unknown Phone")
     goal = data.get("goal", "General Fitness")
     
-    # Target sheet parsed dynamically from user request or matched directly to your variable
+    # 📊 Grabs whatever sheet name is requested dynamically by the incoming frontend network request
     target_sheet = data.get("target_sheet_name", "We Fitness Club Data")
     
-    # Prepare row format
     formatted_row = [name, phone, goal]
-    
-    # Fire direct spreadsheet injection
     success = append_to_google_sheet(target_sheet, formatted_row)
     
     if success:
-        return {"status": "saved", "origin": "direct_gspread_confirmed"}
+        return {"status": "saved", "origin": "vercel_gspread_cloud_confirmed"}
     else:
-        return {"status": "local_error", "detail": "Verify creds.json sharing permissions"}
+        return {"status": "cloud_error", "detail": "Check Vercel Environment configuration variables and sheet editing permissions"}
 
 @app.get("/")
 def root():
-    return {"status": "online", "engine": f"{config_data.get('gym_name')} Engine v1.3"}
+    return {"status": "online", "engine": f"{config_data.get('gym_name')} Cloud Engine v1.4"}
